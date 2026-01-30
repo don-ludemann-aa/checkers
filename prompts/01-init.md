@@ -1,0 +1,2 @@
+Task one I need you to set up a git repository inclusive of a get ignore file that would be appropriate for a Visual Studio Project
+Task 2 I want you to create a agents.md file that would be appropriate for a Visual Studio Project and that would call out that prompts are housed in the prompts folder
