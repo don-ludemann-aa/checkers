@@ -1,7 +1,7 @@
 # Agents
 
 ## Project context
-- Build a Windows 11 terminal checkers game as a C# solution.
+- A Windows 11 terminal checkers game in a C# solution.
 - Solution shape: `Checkers.sln`, `src/Checkers.Core`, `src/Checkers.Cli`, `tests/Checkers.Tests`, and `build.ps1`.
 - Rules target standard American checkers (captures mandatory, multi-jump, kinging).
 - Unit tests cover move generation, captures, kinging, and win detection.
