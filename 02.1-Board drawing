@@ -1,0 +1,27 @@
+Here’s a clean, PowerShell-friendly ASCII board example (mid-game) showing men and kings:
+
+b = black man
+
+B = black king
+
+r = red man
+
+R = red king
+
+. = empty playable square
+
+= unplayable square (light square)
+
+
+    a b c d e f g h
+  +-----------------+
+8 |   .   .   .   . |
+7 | .   b   .   .   |
+6 |   .   B   .   . |
+5 | .   .   r   .   |
+4 |   r   .   .   . |
+3 | .   .   .   R   |
+2 |   .   .   b   . |
+1 | .   .   .   .   |
+  +-----------------+
+

@@ -15,3 +15,5 @@
 7. build out prompts/06-specs.md based on prompts/04-tasks.md and prompts/05-testPlan.md  make it a grid with the ability to mark each item as completed.
 
 8. save all of the requests I have typed into the TUI during this session in a markdown file named 00-requests.md
+
+9. update the Agents.md file after reading all prompts in th peompts file
