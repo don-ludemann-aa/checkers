@@ -34,3 +34,6 @@
 | TP13 | Test | CLI applies legal move and advances turn | T13 | [ ] |
 | TP14 | Test | `build.ps1` restores/builds/tests successfully | T16 | [x] |
 | TP15 | Test | End-to-end build verification | T17 | [x] |
+
+## Out of scope notes
+- TP10, TP11, TP12, TP13 are out of scope for the current UI-only change set (no draw logic or CLI test harness).
