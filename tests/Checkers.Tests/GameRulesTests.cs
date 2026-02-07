@@ -399,4 +399,177 @@ public class GameRulesTests
         Assert.True(moves[0].IsCapture);
         Assert.Equal(new Position(5, 4), moves[0].To);
     }
+
+    [Fact]
+    public void BlackPieceGeneratesNonCaptureMoves()
+    {
+        var board = Board.CreateEmpty();
+        var start = new Position(2, 3);
+        board.SetPiece(start, new Piece(PlayerColor.Black));
+
+        var moves = MoveGenerator.GenerateLegalMoves(board, PlayerColor.Black);
+
+        var targets = moves.Select(m => m.To).ToList();
+        Assert.Contains(new Position(3, 2), targets);
+        Assert.Contains(new Position(3, 4), targets);
+    }
+
+    [Fact]
+    public void BlackCaptureMoveGeneratedWhenOpponentAdjacent()
+    {
+        var board = Board.CreateEmpty();
+        var start = new Position(2, 3);
+        board.SetPiece(start, new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(3, 4), new Piece(PlayerColor.Red));
+
+        var moves = MoveGenerator.GenerateLegalMoves(board, PlayerColor.Black);
+
+        Assert.Single(moves);
+        Assert.Equal(new Position(4, 5), moves[0].To);
+        Assert.True(moves[0].IsCapture);
+    }
+
+    [Fact]
+    public void BlackPieceBecomesKingOnBackRow()
+    {
+        var board = Board.CreateEmpty();
+        var start = new Position(6, 1);
+        board.SetPiece(start, new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(0, 1), new Piece(PlayerColor.Red));
+
+        var state = new GameState(board, PlayerColor.Black);
+        var move = state.GetLegalMoves().Single(m => m.To == new Position(7, 0));
+
+        state.ApplyMove(move);
+
+        var piece = board.GetPiece(new Position(7, 0));
+        Assert.NotNull(piece);
+        Assert.True(piece!.IsKing);
+    }
+
+    [Fact]
+    public void WinDetectedWhenRedHasNoPieces()
+    {
+        var board = Board.CreateEmpty();
+        board.SetPiece(new Position(2, 3), new Piece(PlayerColor.Black));
+        var state = new GameState(board, PlayerColor.Red);
+
+        state.UpdateStatus();
+
+        Assert.Equal(GameStatus.BlackWins, state.Status);
+    }
+
+    [Fact]
+    public void WinDetectedWhenRedHasNoLegalMoves()
+    {
+        var board = Board.CreateEmpty();
+        board.SetPiece(new Position(0, 1), new Piece(PlayerColor.Red));
+        board.SetPiece(new Position(7, 0), new Piece(PlayerColor.Black));
+
+        var state = new GameState(board, PlayerColor.Red);
+        state.UpdateStatus();
+
+        Assert.Equal(GameStatus.BlackWins, state.Status);
+    }
+
+    [Fact]
+    public void CaptureBlockedByOccupiedLandingFallsBackToSimpleMoves()
+    {
+        var board = Board.CreateEmpty();
+        board.SetPiece(new Position(5, 2), new Piece(PlayerColor.Red));
+        board.SetPiece(new Position(4, 3), new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(3, 4), new Piece(PlayerColor.Red));
+
+        var moves = MoveGenerator.GenerateLegalMoves(board, PlayerColor.Red);
+
+        Assert.All(moves, move => Assert.False(move.IsCapture));
+        Assert.Contains(moves, move => move.From == new Position(5, 2) && move.To == new Position(4, 1));
+        Assert.DoesNotContain(moves, move => move.From == new Position(5, 2) && move.To == new Position(3, 4));
+    }
+
+    [Fact]
+    public void MultiJumpWithBranchesGeneratesAllCaptureSequences()
+    {
+        var board = Board.CreateEmpty();
+        board.SetPiece(new Position(5, 2), new Piece(PlayerColor.Red));
+        board.SetPiece(new Position(4, 1), new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(2, 1), new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(4, 3), new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(2, 5), new Piece(PlayerColor.Black));
+
+        var moves = MoveGenerator.GenerateLegalMoves(board, PlayerColor.Red);
+
+        Assert.Equal(2, moves.Count);
+        Assert.All(moves, move =>
+        {
+            Assert.True(move.IsCapture);
+            Assert.Equal(2, move.Captured.Count);
+            Assert.Equal(3, move.Path.Count);
+        });
+
+        var destinations = moves.Select(m => m.To).ToList();
+        Assert.Contains(new Position(1, 2), destinations);
+        Assert.Contains(new Position(1, 6), destinations);
+    }
+
+    [Fact]
+    public void ApplyMove_CaptureRemovesAllCapturedPieces()
+    {
+        var board = Board.CreateEmpty();
+        board.SetPiece(new Position(5, 0), new Piece(PlayerColor.Red));
+        board.SetPiece(new Position(4, 1), new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(2, 3), new Piece(PlayerColor.Black));
+        board.SetPiece(new Position(7, 6), new Piece(PlayerColor.Black));
+        var state = new GameState(board, PlayerColor.Red);
+
+        var move = state.GetLegalMoves().Single();
+        state.ApplyMove(move);
+
+        Assert.Null(board.GetPiece(new Position(5, 0)));
+        Assert.Null(board.GetPiece(new Position(4, 1)));
+        Assert.Null(board.GetPiece(new Position(2, 3)));
+        Assert.NotNull(board.GetPiece(new Position(1, 4)));
+    }
+
+    [Fact]
+    public void ApplyMove_NoPieceAtMoveStart_Throws()
+    {
+        var board = Board.CreateEmpty();
+        board.SetPiece(new Position(2, 3), new Piece(PlayerColor.Black));
+        var state = new GameState(board, PlayerColor.Red);
+        var move = new Move(
+            new Position(5, 2),
+            new Position(4, 1),
+            new[] { new Position(5, 2), new Position(4, 1) },
+            new Position[0]);
+
+        Assert.Throws<InvalidOperationException>(() => state.ApplyMove(move));
+    }
+
+    [Fact]
+    public void MoveMatchesPath_RequiresExactPath()
+    {
+        var move = new Move(
+            new Position(5, 0),
+            new Position(1, 4),
+            new[] { new Position(5, 0), new Position(3, 2), new Position(1, 4) },
+            new[] { new Position(4, 1), new Position(2, 3) });
+
+        Assert.True(move.MatchesPath(new[] { new Position(5, 0), new Position(3, 2), new Position(1, 4) }));
+        Assert.False(move.MatchesPath(new[] { new Position(5, 0), new Position(3, 4), new Position(1, 4) }));
+        Assert.False(move.MatchesPath(new[] { new Position(5, 0), new Position(1, 4) }));
+    }
+
+    [Fact]
+    public void BoardClone_CopiesPieceStateIndependently()
+    {
+        var board = Board.CreateEmpty();
+        board.SetPiece(new Position(5, 2), new Piece(PlayerColor.Red));
+
+        var clone = board.Clone();
+        board.GetPiece(new Position(5, 2))!.MakeKing();
+
+        Assert.True(board.GetPiece(new Position(5, 2))!.IsKing);
+        Assert.False(clone.GetPiece(new Position(5, 2))!.IsKing);
+    }
 }
